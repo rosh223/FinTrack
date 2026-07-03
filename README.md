@@ -5,7 +5,7 @@
 **A full-stack personal finance management application built with Java Spring Boot and Vanilla JavaScript.**
 
 [![Live Backend](https://img.shields.io/badge/Backend-Live%20on%20Render-46E3B7?style=for-the-badge&logo=render)](https://fintrack-vmcu.onrender.com)
-[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger)](https://fintrack-vmcu.onrender.com/swagger-ui.html)
+[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger)](https://fintrack-vmcu.onrender.com/swagger-ui/index.html)
 [![Database](https://img.shields.io/badge/Database-Neon%20PostgreSQL-00E5A0?style=for-the-badge&logo=postgresql)](https://neon.tech)
 
 </div>

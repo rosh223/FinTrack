@@ -92,110 +92,118 @@ The application follows a **client-server architecture** with a RESTful API back
 
 ## 🏗️ System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        INTERNET (HTTPS)                         │
-└──────────┬──────────────────────────────────┬───────────────────┘
-           │                                  │
-           ▼                                  ▼
-┌─────────────────────┐          ┌─────────────────────────┐
-│   Render Static     │          │   Render Web Service    │
-│   Site (Frontend)   │   HTTP   │   (Backend Docker)      │
-│                     │ ───────► │                         │
-│  ┌───────────────┐  │  Fetch   │  ┌───────────────────┐  │
-│  │  HTML Pages   │  │  API     │  │  Spring Boot App  │  │
-│  │  CSS Styles   │  │          │  │  (Java 17 + JRE)  │  │
-│  │  JavaScript   │  │          │  │                   │  │
-│  │  (Fetch API)  │  │          │  │  Port 8080        │  │
-│  └───────────────┘  │          │  └────────┬──────────┘  │
-│                     │          │           │              │
-│  fintrack-frontend  │          │  fintrack-vmcu           │
-│  .onrender.com      │          │  .onrender.com           │
-└─────────────────────┘          └───────────┬─────────────┘
-                                             │
-                                             │ JDBC (SSL)
-                                             ▼
-                                 ┌─────────────────────────┐
-                                 │   Neon PostgreSQL       │
-                                 │   (AWS Singapore)       │
-                                 │                         │
-                                 │  Tables:                │
-                                 │  ├── users              │
-                                 │  ├── categories         │
-                                 │  ├── expenses           │
-                                 │  ├── incomes            │
-                                 │  └── budgets            │
-                                 │                         │
-                                 │  neondb (free tier)     │
-                                 └─────────────────────────┘
+### Architecture at a Glance
+
+```mermaid
+graph LR
+    subgraph Client
+        A["🌐 Browser"]
+    end
+
+    subgraph Render - Static Site
+        B["📄 HTML / CSS / JS\n(Vanilla Frontend)"]
+    end
+
+    subgraph Render - Web Service
+        C["☕ Spring Boot\n(Docker Container)"]
+    end
+
+    subgraph Neon - AWS Singapore
+        D[("🐘 PostgreSQL\nDatabase")]
+    end
+
+    A -- "HTTPS" --> B
+    B -- "Fetch API\n(REST + JWT)" --> C
+    C -- "JDBC + SSL" --> D
 ```
 
-### Layered Architecture (Backend)
+### Component Map
 
+```mermaid
+graph TB
+    subgraph Frontend["📦 Frontend (Static Site)"]
+        F1["index.html\n(Login/Register)"]
+        F2["dashboard.html"]
+        F3["expense.html"]
+        F4["income.html"]
+        F5["budget.html"]
+        F6["category.html"]
+        F7["reports.html"]
+        F8["app.js\n(Core Logic)"]
+        F9["style.css"]
+    end
+
+    subgraph Backend["📦 Backend (Spring Boot)"]
+        SEC["🔒 Security Filter\nJwtAuthFilter"]
+        
+        subgraph Controllers
+            AC["AuthController"]
+            EC["ExpenseController"]
+            IC["IncomeController"]
+            CC["CategoryController"]
+            BC["BudgetController"]
+            DC["DashboardController"]
+            RC["ReportController"]
+            HC["HealthController"]
+        end
+
+        subgraph Services
+            AS["AuthService"]
+            ES["ExpenseService"]
+            IS["IncomeService"]
+            CS["CategoryService"]
+            BS["BudgetService"]
+            DS["DashboardService"]
+            RS["ReportService"]
+            JS["JwtService"]
+        end
+
+        subgraph Repositories
+            UR["UserRepository"]
+            ER["ExpenseRepository"]
+            IR["IncomeRepository"]
+            CR["CategoryRepository"]
+            BR["BudgetRepository"]
+        end
+    end
+
+    subgraph Database["🐘 PostgreSQL (Neon)"]
+        T1[("users")]
+        T2[("expenses")]
+        T3[("incomes")]
+        T4[("categories")]
+        T5[("budgets")]
+    end
+
+    Frontend -- "HTTP/REST" --> SEC
+    SEC --> Controllers
+    Controllers --> Services
+    Services --> Repositories
+    Repositories --> Database
 ```
-┌──────────────────────────────────────────────────┐
-│                  Client Request                   │
-│              (HTTP + JWT in Header)                │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│             Security Filter Chain                 │
-│  ┌────────────────────────────────────────────┐   │
-│  │  JwtAuthenticationFilter                   │   │
-│  │  • Extracts JWT from Authorization header  │   │
-│  │  • Validates token via JwtService          │   │
-│  │  • Sets SecurityContext if valid           │   │
-│  └────────────────────────────────────────────┘   │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│               Controller Layer                    │
-│                                                   │
-│  AuthController  │ ExpenseController │ Income...   │
-│  BudgetController│ CategoryController│ Report...   │
-│  DashboardController │ HealthController            │
-│                                                   │
-│  • Receives HTTP requests                         │
-│  • Validates input (via @Valid)                    │
-│  • Delegates to Service layer                     │
-│  • Returns ResponseEntity<DTO>                    │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│                Service Layer                      │
-│                                                   │
-│  AuthService  │ ExpenseService  │ IncomeService    │
-│  BudgetService│ CategoryService │ ReportService    │
-│  DashboardService │ JwtService                     │
-│                                                   │
-│  • Contains all business logic                    │
-│  • Converts Entities ↔ DTOs                       │
-│  • Enforces authorization (user-specific data)    │
-│  • Throws custom exceptions                       │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│              Repository Layer                     │
-│                                                   │
-│  UserRepository │ ExpenseRepository │ Income...    │
-│  BudgetRepository │ CategoryRepository             │
-│                                                   │
-│  • Extends JpaRepository<Entity, Long>            │
-│  • Spring Data auto-generates SQL queries          │
-│  • Custom queries via method naming convention    │
-└──────────────────────┬───────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────┐
-│               Database (PostgreSQL)               │
-│                                                   │
-│  Hibernate auto-generates tables from @Entity     │
-│  using ddl-auto: update                           │
-└──────────────────────────────────────────────────┘
+
+### Layered Architecture
+
+```mermaid
+graph TD
+    A["📱 Client Request\n(HTTP + JWT Header)"] --> B
+
+    B["🔒 Security Filter Chain\n• JwtAuthenticationFilter\n• Extract & validate JWT\n• Set SecurityContext"] --> C
+
+    C["🎯 Controller Layer\n• Receive HTTP request\n• Validate input via @Valid\n• Delegate to Service\n• Return ResponseEntity"] --> D
+
+    D["⚙️ Service Layer\n• Business logic\n• Entity ↔ DTO conversion\n• User-scoped authorization\n• Custom exceptions"] --> E
+
+    E["📂 Repository Layer\n• extends JpaRepository\n• Auto-generated SQL queries\n• Custom queries via naming"] --> F
+
+    F["🐘 Database\n• Hibernate auto-generates DDL\n• ddl-auto: update"]
+
+    style A fill:#4A90D9,color:#fff
+    style B fill:#E74C3C,color:#fff
+    style C fill:#2ECC71,color:#fff
+    style D fill:#F39C12,color:#fff
+    style E fill:#9B59B6,color:#fff
+    style F fill:#1ABC9C,color:#fff
 ```
 
 ---
@@ -204,37 +212,53 @@ The application follows a **client-server architecture** with a RESTful API back
 
 ### Entity Relationship Diagram
 
-```
-┌──────────────┐       ┌──────────────────┐       ┌──────────────┐
-│    users     │       │    categories    │       │   budgets    │
-├──────────────┤       ├──────────────────┤       ├──────────────┤
-│ id (PK)      │       │ id (PK)          │       │ id (PK)      │
-│ name         │◄──┐   │ name             │       │ user_id (FK) │
-│ email (UQ)   │   │   │ user_id (FK)     │──┐   │ month        │
-│ password     │   │   └──────────────────┘  │   │ year         │
-│ role (ENUM)  │   │                         │   │ amount       │
-└──────┬───────┘   │   ┌──────────────────┐  │   └──────────────┘
-       │           │   │    expenses      │  │         │
-       │           │   ├──────────────────┤  │         │
-       │           ├───│ user_id (FK)     │  │         │
-       │           │   │ category_id (FK) │──┘         │
-       │           │   │ amount           │            │
-       │           │   │ description      │            │
-       │           │   │ date             │            │
-       │           │   └──────────────────┘            │
-       │           │                                   │
-       │           │   ┌──────────────────┐            │
-       │           │   │    incomes       │            │
-       │           │   ├──────────────────┤            │
-       │           └───│ user_id (FK)     │            │
-       │               │ amount           │            │
-       │               │ source           │            │
-       │               │ description      │            │
-       │               │ date             │            │
-       │               └──────────────────┘            │
-       │                                               │
-       └─────────── One User has Many ─────────────────┘
-                    (expenses, incomes, budgets, categories)
+```mermaid
+erDiagram
+    users {
+        Long id PK
+        String name
+        String email UK
+        String password
+        Role role
+    }
+
+    categories {
+        Long id PK
+        String name
+        Long user_id FK
+    }
+
+    expenses {
+        Long id PK
+        BigDecimal amount
+        String description
+        LocalDate date
+        Long user_id FK
+        Long category_id FK
+    }
+
+    incomes {
+        Long id PK
+        BigDecimal amount
+        String source
+        String description
+        LocalDate date
+        Long user_id FK
+    }
+
+    budgets {
+        Long id PK
+        BigDecimal amount
+        int month
+        int year
+        Long user_id FK
+    }
+
+    users ||--o{ categories : "has many"
+    users ||--o{ expenses : "has many"
+    users ||--o{ incomes : "has many"
+    users ||--o{ budgets : "has many"
+    categories ||--o{ expenses : "categorizes"
 ```
 
 ### Key Design Decisions
@@ -300,41 +324,48 @@ The application follows a **client-server architecture** with a RESTful API back
 
 ## 🔐 Authentication Flow
 
-```
-┌──────────┐                    ┌──────────────┐                ┌──────────┐
-│  Client  │                    │  Spring Boot │                │ Database │
-│ (Browser)│                    │   Backend    │                │ (Neon)   │
-└────┬─────┘                    └──────┬───────┘                └────┬─────┘
-     │                                 │                             │
-     │  1. POST /api/v1/auth/register  │                             │
-     │  {name, email, password}        │                             │
-     │────────────────────────────────►│                             │
-     │                                 │  2. Hash password           │
-     │                                 │     (BCrypt)                │
-     │                                 │  3. Save user               │
-     │                                 │────────────────────────────►│
-     │                                 │                             │
-     │                                 │  4. Generate JWT            │
-     │                                 │     (HMAC-SHA256)           │
-     │  5. Return {token: "eyJ..."}    │                             │
-     │◄────────────────────────────────│                             │
-     │                                 │                             │
-     │  6. Store token in localStorage │                             │
-     │                                 │                             │
-     │  ─ ─ ─ ─ ─ (Later) ─ ─ ─ ─ ─  │                             │
-     │                                 │                             │
-     │  7. GET /api/v1/expenses        │                             │
-     │  Header: Bearer eyJ...          │                             │
-     │────────────────────────────────►│                             │
-     │                                 │  8. JwtAuthFilter extracts  │
-     │                                 │     token, validates it     │
-     │                                 │  9. Sets SecurityContext    │
-     │                                 │ 10. Fetch user's expenses   │
-     │                                 │────────────────────────────►│
-     │                                 │◄────────────────────────────│
-     │  11. Return expense list        │                             │
-     │◄────────────────────────────────│                             │
-     │                                 │                             │
+### Registration & Login
+
+```mermaid
+sequenceDiagram
+    actor User as 🧑 User
+    participant Frontend as 📄 Frontend (JS)
+    participant Security as 🔒 Security Filter
+    participant Auth as 🎯 AuthController
+    participant Service as ⚙️ AuthService
+    participant JWT as 🔑 JwtService
+    participant DB as 🐘 PostgreSQL
+
+    Note over User,DB: 1. User Registration
+    User->>Frontend: Fill name, email, password
+    Frontend->>Auth: POST /api/v1/auth/register
+    Auth->>Service: register(RegisterRequest)
+    Service->>Service: Hash password (BCrypt)
+    Service->>DB: save(User entity)
+    DB-->>Service: User saved ✅
+    Service->>JWT: generateToken(user)
+    JWT-->>Service: eyJhbGciOi...
+    Service-->>Auth: AuthResponse{token}
+    Auth-->>Frontend: 200 OK {token: "eyJ..."}
+    Frontend->>Frontend: localStorage.setItem("token", jwt)
+
+    Note over User,DB: 2. Authenticated Request
+    User->>Frontend: Click "View Expenses"
+    Frontend->>Security: GET /api/v1/expenses<br/>Header: Bearer eyJ...
+    Security->>JWT: extractUsername(token)
+    JWT-->>Security: "user@email.com"
+    Security->>DB: loadUserByUsername(email)
+    DB-->>Security: User entity
+    Security->>JWT: isTokenValid(token, user)
+    JWT-->>Security: true ✅
+    Security->>Security: Set SecurityContext
+    Security->>Auth: Forward to Controller
+    Auth->>Service: getExpenses(currentUser)
+    Service->>DB: findByUserId(userId)
+    DB-->>Service: List of expenses
+    Service-->>Auth: List of ExpenseResponse DTOs
+    Auth-->>Frontend: 200 OK [{...}, {...}]
+    Frontend->>User: Render expense table
 ```
 
 ### Security Implementation Details
@@ -349,92 +380,80 @@ The application follows a **client-server architecture** with a RESTful API back
 
 ## 🔄 Data Flow
 
-### Example: Adding a New Expense
+### Adding a New Expense (End-to-End)
 
+```mermaid
+sequenceDiagram
+    actor User as 🧑 User
+    participant UI as 📄 expense.html
+    participant JS as ⚡ app.js
+    participant Filter as 🔒 JwtAuthFilter
+    participant Ctrl as 🎯 ExpenseController
+    participant Svc as ⚙️ ExpenseService
+    participant Repo as 📂 ExpenseRepository
+    participant DB as 🐘 PostgreSQL
+
+    User->>UI: Fill form (amount, description, category, date)
+    UI->>JS: Submit event triggered
+
+    Note over JS: Read JWT from localStorage<br/>Build request body
+
+    JS->>Filter: POST /api/v1/expenses<br/>Authorization: Bearer eyJ...<br/>Body: {amount: 500, description: "Rent",...}
+
+    Filter->>Filter: Extract token from header
+    Filter->>Filter: Validate signature & expiry
+    Filter->>Filter: Set SecurityContext ✅
+
+    Filter->>Ctrl: Forward authenticated request
+    Ctrl->>Ctrl: @Valid validates ExpenseRequest DTO
+    Ctrl->>Svc: addExpense(request, currentUser)
+
+    Svc->>Svc: Convert DTO → Expense entity
+    Svc->>Svc: Set user_id from SecurityContext
+    Svc->>Repo: repository.save(expense)
+
+    Note over Repo: Hibernate generates:<br/>INSERT INTO expenses<br/>(amount, description, category_id,<br/>user_id, date)<br/>VALUES (500, 'Rent', 3, 1, '2026-07-01')
+
+    Repo->>DB: Execute SQL
+    DB-->>Repo: Row inserted ✅
+    Repo-->>Svc: Saved Expense entity
+    Svc->>Svc: Convert Entity → ExpenseResponse DTO
+    Svc-->>Ctrl: ExpenseResponse
+    Ctrl-->>JS: 200 OK {id: 42, amount: 500, ...}
+    JS->>UI: Update expense table
+    UI->>User: New expense visible ✅
 ```
-User clicks "Add Expense" on the UI
-         │
-         ▼
-┌─────────────────────────────┐
-│  Frontend (JavaScript)      │
-│                             │
-│  1. Collect form data       │
-│  2. Read JWT from           │
-│     localStorage            │
-│  3. fetch('/api/v1/expenses'│
-│     method: 'POST',         │
-│     headers: {              │
-│       'Authorization':      │
-│       'Bearer ' + token,    │
-│       'Content-Type':       │
-│       'application/json'    │
-│     },                      │
-│     body: JSON.stringify({  │
-│       amount: 500,          │
-│       description: "Rent",  │
-│       categoryId: 3,        │
-│       date: "2026-07-01"    │
-│     })                      │
-│  )                          │
-└──────────────┬──────────────┘
-               │ HTTPS
-               ▼
-┌─────────────────────────────┐
-│  JwtAuthenticationFilter    │
-│                             │
-│  • Extract token from       │
-│    Authorization header     │
-│  • Validate signature       │
-│    and expiration            │
-│  • Load user from DB        │
-│  • Set SecurityContext      │
-└──────────────┬──────────────┘
-               │ (Authenticated)
-               ▼
-┌─────────────────────────────┐
-│  ExpenseController          │
-│                             │
-│  @PostMapping("/expenses")  │
-│  • Receives @RequestBody    │
-│    ExpenseRequest DTO       │
-│  • @Valid validates fields  │
-│  • Calls ExpenseService     │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│  ExpenseService             │
-│                             │
-│  • Gets current user from   │
-│    SecurityContext           │
-│  • Converts DTO → Entity    │
-│  • Sets user_id on entity   │
-│  • Calls repository.save()  │
-│  • Converts Entity → DTO    │
-│  • Returns ExpenseResponse  │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│  ExpenseRepository          │
-│  (extends JpaRepository)    │
-│                             │
-│  • Hibernate generates:     │
-│    INSERT INTO expenses     │
-│    (amount, description,    │
-│     category_id, user_id,   │
-│     date)                   │
-│    VALUES (500, 'Rent',     │
-│     3, 1, '2026-07-01')    │
-└──────────────┬──────────────┘
-               │ JDBC + SSL
-               ▼
-┌─────────────────────────────┐
-│  PostgreSQL (Neon)          │
-│                             │
-│  Row inserted into          │
-│  expenses table ✅           │
-└─────────────────────────────┘
+
+### Dashboard Data Flow
+
+```mermaid
+sequenceDiagram
+    actor User as 🧑 User
+    participant JS as ⚡ app.js
+    participant Ctrl as 🎯 DashboardController
+    participant Svc as ⚙️ DashboardService
+    participant DB as 🐘 PostgreSQL
+
+    User->>JS: Navigate to Dashboard
+    JS->>Ctrl: GET /api/v1/dashboard<br/>Authorization: Bearer eyJ...
+
+    Ctrl->>Svc: getDashboard(currentUser)
+
+    par Parallel Queries
+        Svc->>DB: SUM(incomes) WHERE user_id = ?
+        Svc->>DB: SUM(expenses) WHERE user_id = ?
+        Svc->>DB: SELECT recent transactions
+        Svc->>DB: SELECT current month budget
+    end
+
+    DB-->>Svc: Aggregated results
+
+    Svc->>Svc: Calculate balance = totalIncome - totalExpenses
+    Svc->>Svc: Calculate budget usage percentage
+    Svc-->>Ctrl: DashboardResponse DTO
+
+    Ctrl-->>JS: 200 OK {totalIncome, totalExpense, balance, ...}
+    JS->>User: Render dashboard cards & charts
 ```
 
 ---
@@ -563,40 +582,42 @@ Import `postman/FinTrack.postman_collection.json` into Postman to test all endpo
 
 ## 🚀 Deployment Strategy
 
-The application is deployed using a **three-tier cloud architecture**:
+### Three-Tier Cloud Architecture
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                     GitHub Repository                       │
-│                    (Source of Truth)                         │
-└─────────┬──────────────────────┬──────────────────┬────────┘
-          │                      │                  │
-          │ Webhook              │ Webhook           │
-          ▼                      ▼                  │
-┌──────────────────┐   ┌──────────────────┐         │
-│  Render           │   │  Render           │         │
-│  Web Service      │   │  Static Site      │         │
-│  (Backend)        │   │  (Frontend)       │         │
-│                   │   │                   │         │
-│  • Docker runtime │   │  • Serves HTML/   │         │
-│  • Java 17 JRE    │   │    CSS/JS files   │         │
-│  • Port 8080      │   │  • Global CDN     │         │
-│  • 256MB heap     │   │  • No build step  │         │
-│  • Auto-sleep on  │   │                   │         │
-│    inactivity     │   │                   │         │
-└────────┬─────────┘   └──────────────────┘         │
-         │                                           │
-         │ JDBC + SSL                                │
-         ▼                                           │
-┌──────────────────┐                                 │
-│  Neon PostgreSQL  │◄────────────── Config ──────────┘
-│  (AWS Singapore)  │               (Environment
-│                   │                Variables)
-│  • Free tier      │
-│  • 0.5GB storage  │
-│  • Auto-suspend   │
-│  • Serverless     │
-└──────────────────┘
+```mermaid
+graph TB
+    subgraph GitHub["☁️ GitHub Repository"]
+        SRC["📦 Source Code\n(main branch)"]
+    end
+
+    subgraph Render["☁️ Render Cloud Platform"]
+        subgraph WS["🖥️ Web Service (Backend)"]
+            DOCKER["🐳 Docker Container"]
+            JRE["☕ Java 17 JRE"]
+            JAR["📦 app.jar\n(Spring Boot)"]
+            PORT["🔌 Port 8080"]
+        end
+
+        subgraph SS["📄 Static Site (Frontend)"]
+            HTML["📄 HTML Pages"]
+            CSS["🎨 CSS Styles"]
+            JSF["⚡ JavaScript"]
+            CDN["🌐 Global CDN"]
+        end
+    end
+
+    subgraph Neon["☁️ Neon (AWS Singapore)"]
+        PG[("🐘 PostgreSQL\n• Free tier\n• 0.5GB storage\n• Auto-suspend\n• Serverless")]
+    end
+
+    SRC -- "Webhook\n(auto-deploy)" --> WS
+    SRC -- "Webhook\n(auto-deploy)" --> SS
+    WS -- "JDBC + SSL" --> PG
+    SS -- "REST API\n(Fetch + JWT)" --> WS
+
+    style GitHub fill:#24292e,color:#fff
+    style Render fill:#46E3B7,color:#000
+    style Neon fill:#00E5A0,color:#000
 ```
 
 ### Deployment Configuration
@@ -655,66 +676,70 @@ ENTRYPOINT ["java", "-Xmx256m", "-jar", "app.jar"]
 
 Render provides **built-in CI/CD** through GitHub webhooks. There is no need to configure GitHub Actions, Jenkins, or any external CI tool.
 
-```
-Developer pushes code
-        │
-        ▼
-┌──────────────────┐
-│     GitHub        │
-│  (main branch)    │
-│                   │
-│  Receives push    │
-│  event            │
-└────────┬─────────┘
-         │
-         │  Webhook notification
-         │  (automatic, configured when
-         │   you linked your repo to Render)
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│              Render Platform              │
-│                                           │
-│  1. Detects which Root Directory changed  │
-│     • backend/ changed → rebuild backend  │
-│     • frontend/ changed → rebuild frontend│
-│     • both changed → rebuild both         │
-│                                           │
-│  2. Backend Build Pipeline:               │
-│     ┌─────────────────────────────────┐   │
-│     │ a. Pull latest code from GitHub │   │
-│     │ b. Run Dockerfile               │   │
-│     │    • Stage 1: mvnw package      │   │
-│     │    • Stage 2: Create JRE image  │   │
-│     │ c. Deploy new container         │   │
-│     │ d. Health check on port 8080    │   │
-│     │ e. Route traffic to new version │   │
-│     │ f. Shut down old container      │   │
-│     └─────────────────────────────────┘   │
-│                                           │
-│  3. Frontend Build Pipeline:              │
-│     ┌─────────────────────────────────┐   │
-│     │ a. Pull latest code from GitHub │   │
-│     │ b. Serve static files via CDN   │   │
-│     │ c. Instant deployment (~10 sec) │   │
-│     └─────────────────────────────────┘   │
-│                                           │
-│  4. Zero-downtime deployment              │
-│     (old version serves traffic until     │
-│      new version is healthy)              │
-└──────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    actor Dev as 👨‍💻 Developer
+    participant Git as 🐙 GitHub
+    participant Render as ☁️ Render Platform
+    participant Docker as 🐳 Docker Build
+    participant App as ☕ Spring Boot App
+    participant CDN as 🌐 Static CDN
+
+    Dev->>Git: git push origin main
+
+    Note over Git: Webhook fires automatically<br/>(configured when repo was linked)
+
+    Git->>Render: POST webhook notification<br/>(new commit on main)
+
+    Render->>Render: Detect changed root directory
+
+    alt backend/ changed
+        Render->>Docker: Build Dockerfile
+        Docker->>Docker: Stage 1: mvnw clean package
+        Docker->>Docker: Stage 2: Create JRE image
+        Docker-->>Render: Image built ✅
+
+        Render->>App: Start new container
+        App->>App: Spring Boot initializes
+        App->>App: Hibernate connects to Neon DB
+        App-->>Render: Port 8080 healthy ✅
+
+        Note over Render: Zero-downtime swap:<br/>Route traffic → new container<br/>Shut down old container
+    end
+
+    alt frontend/ changed
+        Render->>CDN: Pull latest static files
+        CDN->>CDN: Deploy to global edge network
+        CDN-->>Render: Live in ~10 seconds ✅
+    end
+
+    Render-->>Dev: Deploy successful 🎉
 ```
 
 ### What Happens Under the Hood
 
-1. **You run**: `git push origin main`
-2. **GitHub** receives the push and fires a webhook (POST request) to Render's API
-3. **Render** pulls the latest commit, checks which root directory was affected
-4. **Build starts**: Dockerfile is executed (Maven compiles, tests are skipped, JAR is created)
-5. **New container** starts on an isolated environment
-6. **Health check**: Render pings port 8080 — if the app responds, deployment succeeds
-7. **Traffic switch**: Render routes all incoming requests to the new container
-8. **Old container** is gracefully shut down
+```mermaid
+flowchart LR
+    A["git push\norigin main"] --> B["GitHub receives\npush event"]
+    B --> C{"Which root\ndirectory\nchanged?"}
+    C -->|"backend/"| D["Trigger Web\nService rebuild"]
+    C -->|"frontend/"| E["Trigger Static\nSite rebuild"]
+    C -->|"both"| D & E
+
+    D --> F["Run Dockerfile\n(Maven build)"]
+    F --> G["Start new\ncontainer"]
+    G --> H{"Health check\nport 8080?"}
+    H -->|"✅ Healthy"| I["Route traffic\nto new version"]
+    H -->|"❌ Failed"| J["Rollback to\nprevious version"]
+
+    E --> K["Copy files\nto CDN"]
+    K --> L["Live globally\nin 10 seconds"]
+
+    style A fill:#4A90D9,color:#fff
+    style I fill:#2ECC71,color:#fff
+    style J fill:#E74C3C,color:#fff
+    style L fill:#2ECC71,color:#fff
+```
 
 > ⚡ **Total deployment time**: ~3-5 minutes for backend, ~10 seconds for frontend
 
@@ -724,70 +749,86 @@ Developer pushes code
 
 ### Challenge 1: Java Out of Memory (OOM) on Render
 
-**Problem**: Spring Boot application crashed immediately on startup with `Exited with status 1` and `No open ports detected`.
+```mermaid
+flowchart LR
+    A["Spring Boot\nstarts on Render"] --> B["Java allocates\n~400MB heap"]
+    B --> C["Render free tier\nlimit: 512MB"]
+    C --> D["💥 OOM Kill\nExited with status 1"]
+    D --> E["Fix: Add\n-Xmx256m flag"]
+    E --> F["Java capped\nat 256MB ✅"]
 
-**Root Cause**: Java's default behavior is to allocate as much heap memory as the OS allows. On Render's free tier (512MB RAM), Java tried to grab ~400MB for the heap, leaving no room for the OS, JVM internals, or Hibernate — causing an Out of Memory kill.
-
-**Solution**: Added `-Xmx256m` flag to the Dockerfile's `ENTRYPOINT` to cap Java's heap at 256MB:
-```dockerfile
-ENTRYPOINT ["java", "-Xmx256m", "-jar", "app.jar"]
+    style D fill:#E74C3C,color:#fff
+    style F fill:#2ECC71,color:#fff
 ```
+
+**Problem**: Spring Boot crashed immediately on startup with `Exited with status 1` and `No open ports detected`.
+
+**Root Cause**: Java's default behavior is to allocate as much heap memory as the OS allows. On Render's free tier (512MB RAM), Java tried to grab ~400MB for the heap, leaving no room for the OS, JVM internals, or Hibernate.
+
+**Solution**: Added `-Xmx256m` flag to the Dockerfile's `ENTRYPOINT`.
 
 ---
 
 ### Challenge 2: Supabase IPv6 vs Render IPv4
 
-**Problem**: After fixing the OOM issue, the app crashed with `java.net.UnknownHostException: db.xxxx.supabase.co` — meaning Render couldn't even find the database server.
+```mermaid
+flowchart LR
+    A["Render Container\n(IPv4 only)"] -- "Can't resolve\nIPv6 address" -->|"❌"| B["Supabase Direct\ndb.xxx.supabase.co\n(IPv6 only)"]
+    A -- "Fallback to\nConnection Pooler" --> C["Supabase Pooler\npooler.supabase.com\n(IPv4 ✅)"]
+    C -->|"❌"| D["ENOTFOUND\ntenant not found"]
+    D --> E["Supabase infra issue\nPgBouncer routing broken"]
+    E --> F["🔄 Switch to Neon"]
+    F --> G["✅ Direct IPv4\nConnection works!"]
 
-**Root Cause**: Supabase recently migrated their **direct connections** to **IPv6-only**. Render's free tier Docker containers run on **IPv4-only** networks. IPv4 machines literally cannot resolve IPv6 addresses — it's like trying to call a phone number with too many digits.
-
-**Attempted Fix**: Switched to Supabase's **Connection Pooler** (PgBouncer), which supports IPv4.
-
----
-
-### Challenge 3: Supabase PgBouncer Tenant Routing Failure
-
-**Problem**: Even after switching to the pooler URL, the app crashed with: `FATAL: (ENOTFOUND) tenant/user postgres.mwcyyhsytfueuagqywcd not found`
-
-**Root Cause**: Supabase's PgBouncer uses the **username** (format: `postgres.<project_ref>`) to route connections to the correct database. For newly created projects, the pooler's routing table sometimes hasn't propagated the tenant information yet. Supabase's own dashboard was displaying "We are investigating a technical issue" at the time, confirming this was an infrastructure problem on their end.
-
-**Solution**: Abandoned Supabase entirely and switched to **Neon** — a PostgreSQL provider that offers:
-- Direct IPv4 connections (no pooler needed)
-- Instant project provisioning (created in 2223ms)
-- Free tier with 0.5GB storage
-- Works flawlessly with standard JDBC connections
-
----
-
-### Challenge 4: 403 Forbidden on Root URL
-
-**Problem**: Visiting `https://fintrack-vmcu.onrender.com/` returned `HTTP ERROR 403 - Access Denied`, which looked like the app was broken.
-
-**Root Cause**: Spring Security's default configuration blocks all unauthenticated requests. Since there was no controller mapped to `/`, Spring returned a 403.
-
-**Solution**: 
-1. Created a `HealthController.java` with a `@GetMapping("/")` that returns a JSON status response
-2. Added `"/"` to the `permitAll()` list in `SecurityConfig.java`
-
-```json
-{
-  "status": "running",
-  "application": "FinTrack API",
-  "version": "1.0.0",
-  "docs": "/swagger-ui.html"
-}
+    style B fill:#E74C3C,color:#fff
+    style D fill:#E74C3C,color:#fff
+    style G fill:#2ECC71,color:#fff
 ```
 
+**Problem 1**: `java.net.UnknownHostException: db.xxxx.supabase.co` — Render couldn't resolve the database host.
+
+**Root Cause**: Supabase migrated direct connections to **IPv6-only**. Render's free tier runs on **IPv4-only** networks.
+
+**Problem 2**: Switched to Supabase's pooler, but got `FATAL: (ENOTFOUND) tenant/user not found`.
+
+**Root Cause**: Supabase's PgBouncer routing table hadn't propagated the newly created project's tenant. Their dashboard confirmed: *"We are investigating a technical issue."*
+
+**Solution**: Migrated from Supabase to **Neon** — which provides direct IPv4 PostgreSQL connections with zero pooler overhead. Connected successfully on the first attempt.
+
 ---
 
-### Summary of Issues
+### Challenge 3: 403 Forbidden on Root URL
 
-| # | Issue | Cause | Fix |
-|---|-------|-------|-----|
-| 1 | OOM crash on Render | Java default heap too large | `-Xmx256m` in Dockerfile |
+```mermaid
+flowchart LR
+    A["Visit /"] --> B["Spring Security"]
+    B --> C{"Is / in\npermitAll?"}
+    C -->|"❌ No"| D["403 Forbidden"]
+    C -->|"✅ Yes"| E["HealthController\nreturns JSON status"]
+
+    D --> F["Fix: Add / to\npermitAll list +\nHealthController"]
+    F --> E
+
+    style D fill:#E74C3C,color:#fff
+    style E fill:#2ECC71,color:#fff
+```
+
+**Problem**: Visiting the backend root URL returned `HTTP ERROR 403`.
+
+**Root Cause**: Spring Security blocks all unauthenticated requests by default, and there was no controller mapped to `/`.
+
+**Solution**: Created `HealthController.java` with a public `@GetMapping("/")` and added `"/"` to the `permitAll()` list in `SecurityConfig.java`.
+
+---
+
+### Summary of All Issues
+
+| # | Issue | Root Cause | Resolution |
+|---|-------|-----------|------------|
+| 1 | OOM crash on Render | Java default heap > Render's 512MB limit | `-Xmx256m` in Dockerfile |
 | 2 | Can't resolve Supabase host | Supabase uses IPv6, Render uses IPv4 | Switched to Connection Pooler |
-| 3 | Pooler tenant not found | Supabase infrastructure issue | Migrated to Neon PostgreSQL |
-| 4 | 403 on root URL | Spring Security blocks `/` | Added HealthController + permitAll |
+| 3 | Pooler tenant not found | Supabase PgBouncer infrastructure issue | Migrated to Neon PostgreSQL |
+| 4 | 403 on root URL | Spring Security blocks unauthenticated `/` | Added HealthController + permitAll |
 
 ---
 

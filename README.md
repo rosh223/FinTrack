@@ -701,9 +701,9 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["Render Container\n(IPv4 only)"] -- "Can't resolve\nIPv6 address" -->|"❌"| B["Supabase Direct\ndb.xxx.supabase.co\n(IPv6 only)"]
+    A["Render Container\n(IPv4 only)"] -- "❌ Can't resolve\nIPv6 address" --> B["Supabase Direct\ndb.xxx.supabase.co\n(IPv6 only)"]
     A -- "Fallback to\nConnection Pooler" --> C["Supabase Pooler\npooler.supabase.com\n(IPv4 ✅)"]
-    C -->|"❌"| D["ENOTFOUND\ntenant not found"]
+    C -- "❌" --> D["ENOTFOUND\ntenant not found"]
     D --> E["Supabase infra issue\nPgBouncer routing broken"]
     E --> F["🔄 Switch to Neon"]
     F --> G["✅ Direct IPv4\nConnection works!"]

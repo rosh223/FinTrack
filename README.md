@@ -585,40 +585,18 @@ Import `postman/FinTrack.postman_collection.json` into Postman to test all endpo
 ### Three-Tier Cloud Architecture
 
 ```mermaid
-graph TB
-    subgraph GitHub["☁️ GitHub Repository"]
-        SRC["📦 Source Code\n(main branch)"]
-    end
-
-    subgraph Render["☁️ Render Cloud Platform"]
-        subgraph WS["🖥️ Web Service (Backend)"]
-            DOCKER["🐳 Docker Container"]
-            JRE["☕ Java 17 JRE"]
-            JAR["📦 app.jar\n(Spring Boot)"]
-            PORT["🔌 Port 8080"]
-        end
-
-        subgraph SS["📄 Static Site (Frontend)"]
-            HTML["📄 HTML Pages"]
-            CSS["🎨 CSS Styles"]
-            JSF["⚡ JavaScript"]
-            CDN["🌐 Global CDN"]
-        end
-    end
-
-    subgraph Neon["☁️ Neon (AWS Singapore)"]
-        PG[("🐘 PostgreSQL\n• Free tier\n• 0.5GB storage\n• Auto-suspend\n• Serverless")]
-    end
-
-    SRC -- "Webhook\n(auto-deploy)" --> WS
-    SRC -- "Webhook\n(auto-deploy)" --> SS
-    WS -- "JDBC + SSL" --> PG
-    SS -- "REST API\n(Fetch + JWT)" --> WS
-
-    style GitHub fill:#24292e,color:#fff
-    style Render fill:#46E3B7,color:#000
-    style Neon fill:#00E5A0,color:#000
+graph LR
+    GH["GitHub"] -- webhook --> BE["Render Backend"]
+    GH -- webhook --> FE["Render Frontend"]
+    FE -- "REST + JWT" --> BE
+    BE -- "JDBC + SSL" --> DB[("Neon PostgreSQL")]
 ```
+
+The application is deployed using a classic **three-tier architecture** where each concern is isolated on its own managed service:
+
+- **Frontend (Render Static Site)** — Serves the vanilla HTML/CSS/JS files through a global CDN. No build step is required since there is no framework. Deployments are instant (~10 seconds).
+- **Backend (Render Web Service)** — Runs the Spring Boot application inside a Docker container. Render builds the image using a multi-stage Dockerfile, starts the container, performs a health check on port 8080, and then routes traffic to the new version using a zero-downtime swap.
+- **Database (Neon PostgreSQL)** — A serverless managed PostgreSQL instance on AWS Singapore. Neon's free tier provides 0.5GB of storage and automatically suspends the database when idle to save resources. The backend connects over JDBC with SSL encryption.
 
 ### Deployment Configuration
 

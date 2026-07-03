@@ -222,6 +222,9 @@ erDiagram
 
 ## 🔌 API Endpoints
 
+**Live API Base URL:** `https://fintrack-vmcu.onrender.com`  
+**Interactive Swagger UI:** [https://fintrack-vmcu.onrender.com/swagger-ui/index.html](https://fintrack-vmcu.onrender.com/swagger-ui/index.html)
+
 ### Authentication (Public)
 | Method | Endpoint | Description |
 |--------|----------|-------------|

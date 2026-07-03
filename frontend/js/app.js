@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+// Automatically use local backend for testing, and Render backend for production
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:8080/api/v1' 
+    : 'https://YOUR_BACKEND_NAME.onrender.com/api/v1'; // You will update this after deploying the backend!
 
 // JWT Token Management
 function setToken(token) {

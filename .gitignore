@@ -1,0 +1,47 @@
+# Compiled class file
+*.class
+
+# Maven
+backend/target/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDEs
+.idea/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+
+# Environment variables
+.env
+.env.local
+
+# Frontend (if npm is ever added)
+node_modules/
+dist/
+build/

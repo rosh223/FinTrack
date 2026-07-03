@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <div class="main-content">
+            <h1>Dashboard</h1>
+            
+            <div class="dashboard-cards mt-3">
+                <div class="card stat-card">
+                    <h3>Total Income</h3>
+                    <p id="totalIncome">$0.00</p>
+                </div>
+                <div class="card stat-card">
+                    <h3>Total Expenses</h3>
+                    <p id="totalExpenses">$0.00</p>
+                </div>
+                <div class="card stat-card">
+                    <h3>Remaining Balance</h3>
+                    <p id="remainingBalance">$0.00</p>
+                </div>
+                <div class="card stat-card">
+                    <h3>Budget Usage</h3>
+                    <p id="budgetUsage">0%</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Recent Transactions</h2>
+                <div class="table-responsive mt-3">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Title / Source</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTransactionsTable">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

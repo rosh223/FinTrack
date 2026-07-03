@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Categories</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <div class="main-content">
+            <div class="flex-between mb-3">
+                <h1>Categories</h1>
+                <button class="btn" style="width: auto;" id="showAddFormBtn">Add Custom Category</button>
+            </div>
+            
+            <div class="card" id="categoryFormCard" style="display: none; max-width: 500px;">
+                <h2>Add Custom Category</h2>
+                <div id="formError" class="error-msg mb-3"></div>
+                <form id="categoryForm">
+                    <div class="form-group">
+                        <label>Category Name</label>
+                        <input type="text" id="categoryName" class="form-control" required>
+                    </div>
+                    <div class="flex-between mt-3">
+                        <button type="button" class="btn btn-secondary" style="width: 48%;" id="cancelBtn">Cancel</button>
+                        <button type="submit" class="btn" style="width: 48%;">Save</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Your Categories</h2>
+                <div class="table-responsive mt-3">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryTable">
+                            <tr>
+                                <td colspan="2" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/category.js"></script>
+</body>
+</html>

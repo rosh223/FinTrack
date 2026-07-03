@@ -410,85 +410,18 @@ sequenceDiagram
 
 ## 📁 Project Structure
 
-```
+```text
 FinTrack/
-│
-├── backend/                                    # Spring Boot REST API
-│   ├── Dockerfile                              # Multi-stage Docker build
-│   ├── pom.xml                                 # Maven dependencies
-│   ├── mvnw                                    # Maven wrapper (no install needed)
-│   └── src/main/java/com/fintrack/
-│       ├── FinTrackApplication.java            # Main entry point (@SpringBootApplication)
-│       ├── config/
-│       │   └── SecurityConfig.java             # Spring Security + CORS + JWT filter chain
-│       ├── controller/
-│       │   ├── AuthController.java             # POST /register, /login
-│       │   ├── ExpenseController.java          # CRUD /expenses
-│       │   ├── IncomeController.java           # CRUD /incomes
-│       │   ├── CategoryController.java         # CRUD /categories
-│       │   ├── BudgetController.java           # GET/POST /budgets
-│       │   ├── DashboardController.java        # GET /dashboard
-│       │   ├── ReportController.java           # GET /reports
-│       │   └── HealthController.java           # GET / (public health check)
-│       ├── dto/                                # Data Transfer Objects
-│       │   ├── AuthRequest.java                # Login request body
-│       │   ├── RegisterRequest.java            # Registration request body
-│       │   ├── AuthResponse.java               # JWT token response
-│       │   ├── ExpenseRequest/Response.java    # Expense I/O
-│       │   ├── IncomeRequest/Response.java     # Income I/O
-│       │   ├── BudgetRequest/Response.java     # Budget I/O
-│       │   ├── CategoryRequest/Response.java   # Category I/O
-│       │   ├── DashboardResponse.java          # Dashboard summary
-│       │   ├── CategorySpendingDto.java        # Report data
-│       │   ├── TransactionDto.java             # Recent transactions
-│       │   └── ErrorResponse.java              # Standardized error format
-│       ├── entity/                             # JPA Entities (= Database Tables)
-│       │   ├── User.java                       # users table (implements UserDetails)
-│       │   ├── Expense.java                    # expenses table
-│       │   ├── Income.java                     # incomes table
-│       │   ├── Category.java                   # categories table
-│       │   ├── Budget.java                     # budgets table
-│       │   └── Role.java                       # ENUM: USER, ADMIN
-│       ├── repository/                         # Spring Data JPA Repositories
-│       │   ├── UserRepository.java
-│       │   ├── ExpenseRepository.java
-│       │   ├── IncomeRepository.java
-│       │   ├── CategoryRepository.java
-│       │   └── BudgetRepository.java
-│       ├── security/                           # JWT Security Implementation
-│       │   ├── JwtService.java                 # Token generation & validation
-│       │   ├── JwtAuthenticationFilter.java    # OncePerRequestFilter
-│       │   └── CustomUserDetailsService.java   # Loads user by email
-│       ├── service/                            # Business Logic Layer
-│       │   ├── AuthService.java
-│       │   ├── ExpenseService.java
-│       │   ├── IncomeService.java
-│       │   ├── CategoryService.java
-│       │   ├── BudgetService.java
-│       │   ├── DashboardService.java
-│       │   └── ReportService.java
-│       ├── exception/                          # Custom Exception Handling
-│       └── util/                               # Utility classes
-│
-├── frontend/                                   # Vanilla HTML/CSS/JS Frontend
-│   ├── index.html                              # Login & Registration page
-│   ├── dashboard.html                          # Financial overview
-│   ├── expense.html                            # Expense management
-│   ├── income.html                             # Income management
-│   ├── budget.html                             # Budget management
-│   ├── category.html                           # Category management
-│   ├── reports.html                            # Monthly reports
-│   ├── css/
-│   │   └── style.css                           # Global styles
-│   └── js/
-│       └── app.js                              # Core JS (API calls, auth, DOM logic)
-│
-├── postman/                                    # API Testing
-│   └── FinTrack.postman_collection.json        # Import into Postman
-│
-├── docker-compose.yml                          # Local PostgreSQL setup
-├── .gitignore                                  # Git ignore rules
-└── README.md                                   # This file
+├── backend/                  # Spring Boot REST API
+│   ├── src/main/java/        # Java source code (Controllers, Services, Repositories)
+│   ├── src/main/resources/   # application.yml configuration
+│   └── Dockerfile            # Multi-stage container build
+├── frontend/                 # Vanilla JS Frontend (Render Static Site)
+│   ├── css/                  # Global stylesheets
+│   ├── js/                   # Core application logic (app.js)
+│   └── *.html                # User interface pages
+├── postman/                  # Pre-configured API test collection
+└── docker-compose.yml        # Local DB setup (optional)
 ```
 
 ---

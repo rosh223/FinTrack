@@ -120,91 +120,41 @@ graph LR
 ### Component Map
 
 ```mermaid
-graph TB
-    subgraph Frontend["📦 Frontend (Static Site)"]
-        F1["index.html\n(Login/Register)"]
-        F2["dashboard.html"]
-        F3["expense.html"]
-        F4["income.html"]
-        F5["budget.html"]
-        F6["category.html"]
-        F7["reports.html"]
-        F8["app.js\n(Core Logic)"]
-        F9["style.css"]
-    end
-
-    subgraph Backend["📦 Backend (Spring Boot)"]
-        SEC["🔒 Security Filter\nJwtAuthFilter"]
-        
-        subgraph Controllers
-            AC["AuthController"]
-            EC["ExpenseController"]
-            IC["IncomeController"]
-            CC["CategoryController"]
-            BC["BudgetController"]
-            DC["DashboardController"]
-            RC["ReportController"]
-            HC["HealthController"]
-        end
-
-        subgraph Services
-            AS["AuthService"]
-            ES["ExpenseService"]
-            IS["IncomeService"]
-            CS["CategoryService"]
-            BS["BudgetService"]
-            DS["DashboardService"]
-            RS["ReportService"]
-            JS["JwtService"]
-        end
-
-        subgraph Repositories
-            UR["UserRepository"]
-            ER["ExpenseRepository"]
-            IR["IncomeRepository"]
-            CR["CategoryRepository"]
-            BR["BudgetRepository"]
-        end
-    end
-
-    subgraph Database["🐘 PostgreSQL (Neon)"]
-        T1[("users")]
-        T2[("expenses")]
-        T3[("incomes")]
-        T4[("categories")]
-        T5[("budgets")]
-    end
-
-    Frontend -- "HTTP/REST" --> SEC
-    SEC --> Controllers
-    Controllers --> Services
-    Services --> Repositories
-    Repositories --> Database
+graph LR
+    UI[Frontend UI] --> Auth[Auth Controller]
+    UI --> Exp[Expense Controller]
+    UI --> Inc[Income Controller]
+    
+    Auth --> Svc[Service Layer]
+    Exp --> Svc
+    Inc --> Svc
+    
+    Svc --> Repo[Repository Layer]
+    Repo --> DB[(PostgreSQL)]
 ```
+
+The application is structured into discrete components, keeping separation of concerns intact:
+- **Frontend**: Contains static HTML pages like `dashboard.html` and `expense.html`, driven by `app.js`.
+- **Controllers**: Handle incoming HTTP requests and validate input data.
+- **Services**: Contain the core business logic, such as ensuring users can only access their own data.
+- **Repositories**: Interface with the database using Spring Data JPA.
 
 ### Layered Architecture
 
 ```mermaid
 graph TD
-    A["📱 Client Request\n(HTTP + JWT Header)"] --> B
-
-    B["🔒 Security Filter Chain\n• JwtAuthenticationFilter\n• Extract & validate JWT\n• Set SecurityContext"] --> C
-
-    C["🎯 Controller Layer\n• Receive HTTP request\n• Validate input via @Valid\n• Delegate to Service\n• Return ResponseEntity"] --> D
-
-    D["⚙️ Service Layer\n• Business logic\n• Entity ↔ DTO conversion\n• User-scoped authorization\n• Custom exceptions"] --> E
-
-    E["📂 Repository Layer\n• extends JpaRepository\n• Auto-generated SQL queries\n• Custom queries via naming"] --> F
-
-    F["🐘 Database\n• Hibernate auto-generates DDL\n• ddl-auto: update"]
-
-    style A fill:#4A90D9,color:#fff
-    style B fill:#E74C3C,color:#fff
-    style C fill:#2ECC71,color:#fff
-    style D fill:#F39C12,color:#fff
-    style E fill:#9B59B6,color:#fff
-    style F fill:#1ABC9C,color:#fff
+    Req[Client Request] --> Sec[Security Filter Chain]
+    Sec --> Ctrl[Controller Layer]
+    Ctrl --> Svc[Service Layer]
+    Svc --> Repo[Repository Layer]
+    Repo --> DB[(Database)]
 ```
+
+The backend follows a standard layered architecture:
+1. **Security Layer**: Every incoming request passes through the `JwtAuthenticationFilter`, which verifies the token signature and extracts the user identity.
+2. **Controller Layer**: Responsible for mapping HTTP endpoints (e.g., `@PostMapping("/api/v1/expenses")`) and standardizing JSON responses.
+3. **Service Layer**: Handles data transformation (DTOs to Entities) and enforces business rules.
+4. **Repository Layer**: Generates SQL queries dynamically via Hibernate to interact with the underlying database.
 
 ---
 

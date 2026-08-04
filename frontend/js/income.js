@@ -9,8 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSidebar('income');
     await loadIncomes();
 
+    // Set date constraints on the date input
+    const dateInput = document.getElementById('incomeDate');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('max', today);
+    dateInput.setAttribute('min', '2000-01-01');
+
     document.getElementById('showAddFormBtn').addEventListener('click', () => {
         resetForm();
+        // Default the date to today when adding new income
+        document.getElementById('incomeDate').value = today;
         document.getElementById('incomeFormCard').style.display = 'block';
     });
 
@@ -70,6 +78,18 @@ async function saveIncome() {
 
     const errorDiv = document.getElementById('formError');
     errorDiv.textContent = '';
+
+    // Validate the date is reasonable
+    const incomeDate = new Date(payload.date);
+    const now = new Date();
+    if (isNaN(incomeDate.getTime())) {
+        errorDiv.textContent = 'Please enter a valid date.';
+        return;
+    }
+    if (incomeDate.getFullYear() < 2000 || incomeDate > now) {
+        errorDiv.textContent = 'Date must be between year 2000 and today.';
+        return;
+    }
 
     try {
         if (id) {

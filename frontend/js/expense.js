@@ -11,8 +11,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCategories();
     await loadExpenses();
 
+    // Set date constraints on the date input
+    const dateInput = document.getElementById('expenseDate');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('max', today);
+    dateInput.setAttribute('min', '2000-01-01');
+
     document.getElementById('showAddFormBtn').addEventListener('click', () => {
         resetForm();
+        // Default the date to today when adding a new expense
+        document.getElementById('expenseDate').value = today;
         document.getElementById('expenseFormCard').style.display = 'block';
     });
 
@@ -88,6 +96,18 @@ async function saveExpense() {
 
     const errorDiv = document.getElementById('formError');
     errorDiv.textContent = '';
+
+    // Validate the date is reasonable
+    const expenseDate = new Date(payload.date);
+    const now = new Date();
+    if (isNaN(expenseDate.getTime())) {
+        errorDiv.textContent = 'Please enter a valid date.';
+        return;
+    }
+    if (expenseDate.getFullYear() < 2000 || expenseDate > now) {
+        errorDiv.textContent = 'Date must be between year 2000 and today.';
+        return;
+    }
 
     try {
         if (id) {
